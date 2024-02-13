@@ -2,15 +2,18 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2');
-
+const cors = require('cors');
 const app = express();
-const port = 8282;
+const port = 8282;   
+const server = require('http').createServer(app);
+
+app.use(cors());
 
 // 데이터베이스 연결 설정
 const connection = mysql.createConnection({
   host: 'localhost',
   user: 'san00',
-  password: '0408', 
+  password: '0408',
   database: 'luddite',
   port: 3306,
 });
@@ -40,7 +43,7 @@ app.use(bodyParser.json());
             </head>
             <body>
                 
-                <form action="/login_post" method="POST">
+                <form action="/use/login" method="POST">
                     <fieldset>
                         <legend>로그인</legend>
 
@@ -81,8 +84,8 @@ app.use(bodyParser.json());
     res.send(loginHtml);
  });
 
-//로그인 완료
-app.post('/login_post',(req, res) => {
+//로그인
+app.post('/use/login',(req, res) => {
     const id = req.body.id;
     const pw = req.body.pw;
 
