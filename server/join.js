@@ -33,59 +33,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 
- //로그인
- app.get('/login', (req, res) => {
-    const loginHtml = `
-    <!DOCTYPE html>
-        <html>
-        <head>
-            <title>로그인</title>
-            </head>
-            <body>
-                
-                <form action="/use/login" method="POST">
-                    <fieldset>
-                        <legend>로그인</legend>
-
-                        아이디 : <br>
-                        <input type="text" name="id"><br><br>
-                
-                        비밀번호 : <br>
-                        <input type="password" name="pw"><br><br>
-
-                        <input type="submit" value="로그인">
-                        <input type="button" value="회원 가입" onclick=register()>
-                        <input type="button" value="회원 정보 수정" onclick=update()>
-                    </fieldset>
-
-                    <input type="button" value="관리자 도구" onclick=manager()>
-                </form>
-
-                <script>
-                function register() {
-                    window.location.href = "/join";
-                }
-                </script>
-
-                <script>
-                function update() {
-                    window.location.href = "/update";
-                }
-                </script>
-
-                <script>
-                function manager() {
-                    window.location.href = "/manager";
-                }
-                </script>
-        </body>
-        </html>
-    `
-    res.send(loginHtml);
- });
-
 //로그인
-app.post('/use/login', (req, res) => {
+app.post('/use/login',(req, res) => {
     const id = req.body.id;
     const pw = req.body.pw;
 
@@ -93,80 +42,26 @@ app.post('/use/login', (req, res) => {
 
     connection.query(sql, [id], (err, results) => {
         if (err) {
-            console.error('쿼리 실행 오류:', err);
-            res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
-            return;
+          console.error('쿼리 실행 오류:', err);
+          res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
+          return;
         }
-
+    
         if (results.length === 0) {
-            res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+          res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
         } else {
-            const user = results[0];
-            if (user.pw === pw) {
-                res.status(200).json({ message: `환영합니다 ${id}님!` });
-            } else {
-                res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
-            }
+          const user = results[0];
+          if (user.pw === pw) {
+            res.status(200).json({ message: `환영합니다 ${id}님!` });
+          } else {
+            res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+          }
         }
-    });
+      });
 });
 
-
-//회원가입 입력받기 or 회원수정 페이지로 이동
-app.get('/join',(req, res) => {
-    const joinHtml = `
-    <!DOCTYPE html>
-        <html>
-        <head>
-            <title>회원 정보</title>
-            </head>
-            <body>
-                
-                <form action="/join_post" method="POST">
-                    <fieldset>
-                        <legend>회원가입</legend>
-                        이름 : <br>
-                        <input type="text" name="user_name"><br><br>
-
-                        아이디 : <br>
-                        <input type="text" name="id"><br><br>
-                
-                        비밀번호 : <br>
-                        <input type="password" name="pw"><br><br>
-
-                        <input type="submit" value="가입">
-                        <input type="button" value="로그인" onclick=login()>
-                        <input type="button" value="회원 정보 수정" onclick=update()>
-                    </fieldset>
-
-                    <input type="button" value="관리자 도구" onclick=manager()>
-                </form>
-
-                <script>
-                function login() {
-                    window.location.href = "/login";
-                }
-                </script>
-
-                <script>
-                function update() {
-                    window.location.href = "/update";
-                }
-                </script>
-
-                <script>
-                function manager() {
-                    window.location.href = "/manager";
-                }
-                </script>
-        </body>
-        </html>
-    `
-    res.send(joinHtml);
-});
-
-// 회원가입 완료
-app.post('/join_post', (req, res) => {
+//회원가입
+app.post('/use/signup', (req, res) => {
     const user_name = req.body.user_name;
     const id = req.body.id;
     const pw = req.body.pw;
