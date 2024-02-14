@@ -85,7 +85,7 @@ app.use(bodyParser.json());
  });
 
 //로그인
-app.post('/use/login',(req, res) => {
+app.post('/use/login', (req, res) => {
     const id = req.body.id;
     const pw = req.body.pw;
 
@@ -93,23 +93,24 @@ app.post('/use/login',(req, res) => {
 
     connection.query(sql, [id], (err, results) => {
         if (err) {
-          console.error('쿼리 실행 오류:', err);
-          res.status(500).json({ error: '로그인 실패' });
-          return;
+            console.error('쿼리 실행 오류:', err);
+            res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
+            return;
         }
-    
+
         if (results.length === 0) {
-          res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
-        } else {
-          const user = results[0];
-          if (user.pw === pw) {
-            res.status(200).json({ message: `환영합니다 ${id}님!` });
-          } else {
             res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
-          }
+        } else {
+            const user = results[0];
+            if (user.pw === pw) {
+                res.status(200).json({ message: `환영합니다 ${id}님!` });
+            } else {
+                res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+            }
         }
-      });
+    });
 });
+
 
 //회원가입 입력받기 or 회원수정 페이지로 이동
 app.get('/join',(req, res) => {
