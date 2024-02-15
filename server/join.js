@@ -8,6 +8,7 @@ const port = 8282;
 const server = require('http').createServer(app);
 
 app.use(cors());
+app.use(express.json());
 
 // 데이터베이스 연결 설정
 const connection = mysql.createConnection({
@@ -34,31 +35,36 @@ app.use(bodyParser.json());
 
 
 //로그인
-app.post('/use/login',(req, res) => {
+app.post('/use/login', (req, res) => {
     const id = req.body.id;
     const pw = req.body.pw;
-
+  
     const sql = 'SELECT * FROM users WHERE id = ?';
-
+  
     connection.query(sql, [id], (err, results) => {
-        if (err) {
-          console.error('쿼리 실행 오류:', err);
-          res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
-          return;
-        }
-    
-        if (results.length === 0) {
-          res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+      if (err) {
+        console.error('쿼리 실행 오류:', err);
+        res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
+        return;
+      }
+  
+      if (results.length === 0) {
+        res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+      } else {
+        const user = results[0];
+        if (user.pw === pw) {
+          // 북마크 데이터가 null이면 빈 배열을 클라이언트에게 보냄
+          const bookmarksArray = user.bookmarks ? user.bookmarks.split('/') : [];
+  
+          // 클라이언트에게 북마크 배열을 응답
+          res.status(200).json({ message: `환영합니다 ${id}님!`, bookmarks: bookmarksArray });
         } else {
-          const user = results[0];
-          if (user.pw === pw) {
-            res.status(200).json({ message: `환영합니다 ${id}님!` });
-          } else {
-            res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
-          }
+          res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
         }
-      });
-});
+      }
+    });
+  });
+  
 
 //회원가입
 app.post('/use/signup', (req, res) => {
@@ -105,6 +111,30 @@ app.post('/use/signup', (req, res) => {
     }
 
   });
+  
+//북마크 수정
+  app.post('/use/updateBookmarks', (req, res) => {
+    const bookmarksArray = req.body.bookmarks; // 클라이언트에서 받아온 북마크 배열
+  
+    // 북마크 배열을 문자열로 변환하여 '/'로 구분하여 합침
+    const bookmarksString = bookmarksArray.join('/');
+  
+    // 데이터베이스에 북마크 문자열을 업데이트하는 SQL 쿼리
+    const sql = 'UPDATE users SET bookmarks = ? WHERE user_id = ?';
+  
+    // 데이터베이스 쿼리 실행
+    connection.query(sql, [bookmarksString, req.body.id], (err, result) => {
+      if (err) {
+        console.error('쿼리 실행 오류:', err);
+        res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
+        return;
+      }
+  
+      // 쿼리 실행 성공 시 클라이언트에 성공 응답 전송
+      res.status(200).json({ message: '북마크가 성공적으로 업데이트되었습니다.' });
+    });
+  });
+
 
 
   //회원 정보 수정/삭제 페이지
