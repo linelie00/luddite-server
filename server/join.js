@@ -114,16 +114,17 @@ app.post('/use/signup', (req, res) => {
   
 //북마크 수정
   app.post('/use/updateBookmarks', (req, res) => {
+    const id = req.body.id; // 클라이언트에서 받아온 아이디
     const bookmarksArray = req.body.bookmarks; // 클라이언트에서 받아온 북마크 배열
   
     // 북마크 배열을 문자열로 변환하여 '/'로 구분하여 합침
     const bookmarksString = bookmarksArray.join('/');
   
     // 데이터베이스에 북마크 문자열을 업데이트하는 SQL 쿼리
-    const sql = 'UPDATE users SET bookmarks = ? WHERE user_id = ?';
+    const sql = 'UPDATE users SET bookmarks = ? WHERE id = ?';
   
     // 데이터베이스 쿼리 실행
-    connection.query(sql, [bookmarksString, req.body.id], (err, result) => {
+    connection.query(sql, [bookmarksString, id], (err, result) => {
       if (err) {
         console.error('쿼리 실행 오류:', err);
         res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
