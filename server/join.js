@@ -57,7 +57,7 @@ app.post('/use/login', (req, res) => {
           const bookmarksArray = user.bookmarks ? user.bookmarks.split('/') : [];
   
           // 클라이언트에게 북마크 배열을 응답
-          res.status(200).json({ message: `환영합니다 ${id}님!`, bookmarks: bookmarksArray });
+          res.status(200).json({ message: `환영합니다 ${id}님!`, bookmarks: bookmarksArray, user_name: user.user_name });
         } else {
           res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
         }
@@ -68,49 +68,63 @@ app.post('/use/login', (req, res) => {
 
 //회원가입
 app.post('/use/signup', (req, res) => {
-    const user_name = req.body.user_name;
-    const id = req.body.id;
-    const pw = req.body.pw;
+  const user_name = req.body.user_name;
+  const id = req.body.id;
+  const pw = req.body.pw;
 
-    //공백이 있는지 확인
-    if(user_name === '' || id === '' || pw === '' ) {
-        res.status(500).json({ error: '공백이 포함되어 있습니다.' });
-    } else {
+  // 공백이 있는지 확인
+  if (user_name === '' || id === '' || pw === '') {
+      res.status(500).json({ error: '공백이 포함되어 있습니다.' });
+  } else {
+      // 이름이 10글자 이상인 경우
+      if (user_name.length >= 10) {
+          res.status(500).json({ error: '이름은 10글자 이하여야 합니다.' });
+      } else {
+          // 아이디가 20글자 이상인 경우
+          if (id.length >= 20) {
+              res.status(500).json({ error: '아이디는 20글자 이하여야 합니다.' });
+          } else {
+              // 비밀번호가 15글자 이상인 경우
+              if (pw.length >= 15) {
+                  res.status(500).json({ error: '비밀번호는 15글자 이하여야 합니다.' });
+              } else {
+                  // 중복된 아이디 있는지 확인
+                  const dupCheckQuery = 'SELECT * FROM users WHERE id = ?';
+                  connection.query(dupCheckQuery, [id], (checkErr, checkResults) => {
+                      if (checkErr) {
+                          console.error('쿼리 실행 오류:', checkErr);
+                          res.status(500).json({ error: '정보 확인 중 오류 발생' });
+                          return;
+                      }
 
-        // 중복된 아이디 있는지 확인
-        const dupCheckQuery = 'SELECT * FROM users WHERE id = ?';
-        connection.query(dupCheckQuery, [id], (checkErr, checkResults) => {
-            if (checkErr) {
-                console.error('쿼리 실행 오류:', checkErr);
-                res.status(500).json({ error: '정보 확인 중 오류 발생' });
-                return;
-            }
+                      if (checkResults.length === 0) {
+                          // old_pw에 현재 pw를, join_date에 가입한 날짜를, update_date에 현재 날짜를 설정
+                          const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-            if (checkResults.length === 0) {
-                // old_pw에 현재 pw를, join_date에 가입한 날짜를, update_date에 현재 날짜를 설정
-                const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
-                
-                const sql = 'INSERT INTO users (user_name, id, pw, join_date, update_date) VALUES (?, ?, ?, ?, ?)';
-                const values = [user_name, id, pw, currentDateTime, currentDateTime];
-            
-                connection.query(sql, values, (err, results) => {
-                if (err) {
-                    console.error('쿼리 실행 오류:', err);
-                    res.status(500).json({ error: '아이디 추가 실패' });
-                    return;
-                }
-                console.log('아이디가 성공적으로 추가되었습니다.');
-                res.status(200).json({ message: '아이디가 추가되었습니다.' });
+                          const sql = 'INSERT INTO users (user_name, id, pw, join_date, update_date) VALUES (?, ?, ?, ?, ?)';
+                          const values = [user_name, id, pw, currentDateTime, currentDateTime];
 
-                });
-            } else {
-                res.status(401).json({ error: '아이디가 중복되었습니다.' });
-            } 
+                          connection.query(sql, values, (err, results) => {
+                              if (err) {
+                                  console.error('쿼리 실행 오류:', err);
+                                  res.status(500).json({ error: '아이디 추가 실패' });
+                                  return;
+                              }
+                              console.log('아이디가 성공적으로 추가되었습니다.');
+                              res.status(200).json({ message: '아이디가 추가되었습니다.' });
 
-        });
-    }
+                          });
+                      } else {
+                          res.status(401).json({ error: '아이디가 중복되었습니다.' });
+                      }
 
-  });
+                  });
+              }
+          }
+      }
+  }
+});
+
   
 //북마크 수정
   app.post('/use/updateBookmarks', (req, res) => {
@@ -136,63 +150,8 @@ app.post('/use/signup', (req, res) => {
     });
   });
 
-
-
-  //회원 정보 수정/삭제 페이지
-  app.get('/update', (req,res) => {
-    const updateHtml = `
-    <!DOCTYPE html>
-        <html>
-        <head>
-            <title>회원 수정</title>
-            </head>
-            <body>
-
-                <form action="/update_post" method="POST">
-                        
-
-                    <fieldset>
-                        아이디 : 
-                        <input type="text" name="old_id"><br><br>
-                
-                        비밀번호 : 
-                        <input type="password" name="old_pw"><br><br>
-
-                        <legend>정보 수정</legend>
-                        새 이름 : 
-                        <input type="text" name="user_name"><br><br>
-
-                        새 아이디 : 
-                        <input type="text" name="id"><br><br>
-
-                        새 비밀번호 : 
-                        <input type="password" name="pw"><br><br>
-
-                        <input type="submit" value="수정"><br><br>
-                    </fieldset>
-                </form>
-
-                <form action="/delete" method="POST">
-                <fieldset>
-                    <legend>회원 탈퇴</legend>
-                    아이디 : 
-                    <input type="text" name="id"><br><br>
-
-                    비밀번호 : 
-                    <input type="password" name="pw"><br><br>
-
-                    <input type="submit" value="회원 탈퇴"><br><br>
-                </fieldset>
-                </form>
-
-            </body>
-        </html>
-    `
-    res.send(updateHtml);
-  });
-
-  //회원 정보 수정 완료
-  app.post('/update_post', (req, res) => {
+  //회원 정보 수정
+  app.post('/use/update', (req, res) => {
     const user_name = req.body.user_name;
     const old_id = req.body.old_id;
     const old_pw = req.body.old_pw;
@@ -214,8 +173,8 @@ app.post('/use/signup', (req, res) => {
         // old_id와 old_pw가 일치하는 경우, 정보를 수정
         const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
   
-        const updateQuery = 'UPDATE users SET user_name = ?, id = ?, pw = ?, old_pw = ?, update_date = ? WHERE id = ? AND pw = ?';
-        const updateValues = [user_name, id, pw, old_pw, currentDateTime, old_id, old_pw];
+        const updateQuery = 'UPDATE users SET user_name = ?, id = ?, pw = ?, update_date = ? WHERE id = ? AND pw = ?';
+        const updateValues = [user_name, id, pw, currentDateTime, old_id, pw];
   
         connection.query(updateQuery, updateValues, (updateErr, updateResults) => {
           if (updateErr) {
@@ -230,6 +189,41 @@ app.post('/use/signup', (req, res) => {
       }
     });
   });
+
+
+  //아이디 중복 확인
+app.post('/use/checkId', (req, res) => {
+  const id = req.body.id;
+
+  // 공백 체크
+  if (!id.trim()) {
+    return res.status(400).json({ error: '아이디를 입력해주세요.' });
+  }
+
+  // 아이디 길이 체크 (20글자 초과)
+  if (id.length > 20) {
+    return res.status(400).json({ error: '아이디는 20글자 이하여야 합니다.' });
+  }
+
+  const sql = 'SELECT * FROM users WHERE id = ?';
+
+  connection.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error('쿼리 실행 오류:', err);
+      return res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
+    }
+
+    if (results.length === 0) {
+      // 아이디가 중복되지 않은 경우
+      res.status(200).json({ message: '사용 가능한 아이디입니다.' });
+    } else {
+      // 아이디가 중복된 경우
+      res.status(400).json({ error: '이미 사용 중인 아이디입니다.' });
+    }
+  });
+});
+
+  
   
 
   //회원 탈퇴
@@ -266,6 +260,8 @@ app.post('/use/signup', (req, res) => {
     }
     });
 });
+
+//비밀번호 수정
 
 // 관리자용 페이지
 app.get('/manager',(req, res) => {
