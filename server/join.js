@@ -200,6 +200,10 @@ app.post('/use/checkId', (req, res) => {
     return res.status(400).json({ error: '아이디를 입력해주세요.' });
   }
 
+  if (id.includes(' ')) {
+    return res.status(400).json({ error: '아이디에 공백이 포함되어 있습니다.' });
+  }
+
   // 아이디 길이 체크 (20글자 초과)
   if (id.length > 20) {
     return res.status(400).json({ error: '아이디는 20글자 이하여야 합니다.' });
@@ -223,6 +227,63 @@ app.post('/use/checkId', (req, res) => {
   });
 });
 
+  //비밀번호 수정
+  app.post('/use/checkPw', (req, res) => {
+    const id = req.body.id;
+    const pw = req.body.pw;
+    const newPw = req.body.newPw;
+    const confirmPw = req.body.confirmPw;
+  
+    // 입력된 값의 공백 여부 확인
+    if (!pw || !newPw || !confirmPw) {
+      return res.status(400).json({ error: '비밀번호를 입력해주세요.' });
+    }
+  
+    // 입력된 비밀번호에 공백이 포함되어 있는지 확인
+    if (pw.includes(' ') || newPw.includes(' ') || confirmPw.includes(' ')) {
+      return res.status(400).json({ error: '비밀번호에 공백이 포함되어 있습니다.' });
+    }
+  
+    // 비밀번호 길이가 15자 이하인지 확인
+    if (pw.length > 15 || newPw.length > 15 || confirmPw.length > 15) {
+      return res.status(400).json({ error: '비밀번호는 15글자 이하여야 합니다.' });
+    }
+  
+    // 새로운 비밀번호와 비밀번호 확인이 일치하는지 확인
+    if (newPw !== confirmPw) {
+      return res.status(400).json({ error: '비밀번호 확인이 일치하지 않습니다.' });
+    }
+  
+    // 아이디를 사용하여 해당 사용자를 데이터베이스에서 찾음
+    const findUserSql = 'SELECT * FROM users WHERE id = ?';
+    connection.query(findUserSql, [id], (err, results) => {
+      if (err) {
+        console.error('쿼리 실행 오류:', err);
+        return res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
+      }
+  
+      // 사용자를 찾지 못한 경우
+      if (results.length === 0) {
+        return res.status(400).json({ error: '해당하는 아이디를 찾을 수 없습니다.' });
+      }
+  
+      // 사용자를 찾은 경우, 비밀번호를 확인하여 일치하는 경우에만 업데이트
+      const user = results[0];
+      if (user.pw !== pw) {
+        return res.status(400).json({ error: '아이디와 비밀번호가 일치하지 않습니다.' });
+      }
+  
+      // 비밀번호 업데이트
+      const updateUserSql = 'UPDATE users SET pw = ? WHERE id = ?';
+      connection.query(updateUserSql, [newPw, id], (err, results) => {
+        if (err) {
+          console.error('쿼리 실행 오류:', err);
+          return res.status(500).json({ error: '비밀번호 업데이트 중 오류가 발생했습니다.' });
+        }
+        res.status(200).json({ message: '비밀번호가 성공적으로 변경되었습니다.' });
+      });
+    });
+  });
   
   
 
