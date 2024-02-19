@@ -133,12 +133,14 @@ app.post('/use/signup', (req, res) => {
   
     // 북마크 배열을 문자열로 변환하여 '/'로 구분하여 합침
     const bookmarksString = bookmarksArray.join('/');
+
+    const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
   
     // 데이터베이스에 북마크 문자열을 업데이트하는 SQL 쿼리
-    const sql = 'UPDATE users SET bookmarks = ? WHERE id = ?';
+    const sql = 'UPDATE users SET bookmarks = ?, update_date = ? WHERE id = ?';
   
     // 데이터베이스 쿼리 실행
-    connection.query(sql, [bookmarksString, id], (err, result) => {
+    connection.query(sql, [bookmarksString, currentDateTime, id], (err, result) => {
       if (err) {
         console.error('쿼리 실행 오류:', err);
         res.status(500).json({ error: '데이터베이스 오류가 발생했습니다.' });
@@ -150,13 +152,12 @@ app.post('/use/signup', (req, res) => {
     });
   });
 
+
   //회원 정보 수정
   app.post('/use/update', (req, res) => {
     const user_name = req.body.user_name;
     const old_id = req.body.old_id;
-    const old_pw = req.body.old_pw;
     const id = req.body.id;
-    const pw = req.body.pw;
   
     // old_id와 old_pw 값이 데이터베이스에서 일치하는지 확인
     const checkQuery = 'SELECT * FROM users WHERE id = ? AND pw = ?';
@@ -272,10 +273,12 @@ app.post('/use/checkId', (req, res) => {
       if (user.pw !== pw) {
         return res.status(400).json({ error: '아이디와 비밀번호가 일치하지 않습니다.' });
       }
+
+      const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
   
       // 비밀번호 업데이트
-      const updateUserSql = 'UPDATE users SET pw = ? WHERE id = ?';
-      connection.query(updateUserSql, [newPw, id], (err, results) => {
+      const updateUserSql = 'UPDATE users SET pw = ?, update_date = ? WHERE id = ?';
+      connection.query(updateUserSql, [newPw, currentDateTime, id], (err, results) => {
         if (err) {
           console.error('쿼리 실행 오류:', err);
           return res.status(500).json({ error: '비밀번호 업데이트 중 오류가 발생했습니다.' });
