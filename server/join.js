@@ -77,15 +77,15 @@ app.post('/use/signup', (req, res) => {
       res.status(500).json({ error: '공백이 포함되어 있습니다.' });
   } else {
       // 이름이 10글자 이상인 경우
-      if (user_name.length >= 10) {
+      if (user_name.length > 10) {
           res.status(500).json({ error: '이름은 10글자 이하여야 합니다.' });
       } else {
           // 아이디가 20글자 이상인 경우
-          if (id.length >= 20) {
+          if (id.length > 20) {
               res.status(500).json({ error: '아이디는 20글자 이하여야 합니다.' });
           } else {
               // 비밀번호가 15글자 이상인 경우
-              if (pw.length >= 15) {
+              if (pw.length > 15) {
                   res.status(500).json({ error: '비밀번호는 15글자 이하여야 합니다.' });
               } else {
                   // 중복된 아이디 있는지 확인
@@ -153,43 +153,77 @@ app.post('/use/signup', (req, res) => {
   });
 
 
-  //회원 정보 수정
-  app.post('/use/update', (req, res) => {
-    const user_name = req.body.user_name;
-    const old_id = req.body.old_id;
-    const id = req.body.id;
-  
-    // old_id와 old_pw 값이 데이터베이스에서 일치하는지 확인
-    const checkQuery = 'SELECT * FROM users WHERE id = ? AND pw = ?';
-    connection.query(checkQuery, [old_id, old_pw], (checkErr, checkResults) => {
+  // 회원 정보 수정
+app.post('/use/editProfile', (req, res) => {
+  const user_name = req.body.user_name;
+  const old_id = req.body.old_id;
+  const id = req.body.id;
+  const checkId = req.body.checkId;
+
+  console.log('user_name:', user_name);
+  console.log('old_id:', old_id);
+  console.log('id:', id);
+  console.log('checkId:', checkId);
+
+  // 체크아이디가 false인 경우에 대한 조건 추가
+  if (!checkId) {
+      return res.status(400).json({ error: '아이디 중복 확인을 해주세요.' });
+  }
+
+  if (user_name.length > 10) {
+      return res.status(500).json({ error: '이름은 10글자 이하여야 합니다.' });
+  }
+
+  if (id.length > 20) {
+      return res.status(500).json({ error: '아이디는 20글자 이하여야 합니다.' });
+  }
+
+  // old_id 값이 데이터베이스에서 일치하는지 확인
+  const checkQuery = 'SELECT * FROM users WHERE id = ?';
+  connection.query(checkQuery, [old_id], (checkErr, checkResults) => {
       if (checkErr) {
-        console.error('쿼리 실행 오류:', checkErr);
-        res.status(500).json({ error: '정보 확인 중 오류 발생' });
-        return;
+          console.error('쿼리 실행 오류:', checkErr);
+          return res.status(500).json({ error: '정보 확인 중 오류 발생' });
       }
-  
+
       if (checkResults.length === 0) {
-        res.status(401).json({ error: '기존 아이디 또는 비밀번호가 올바르지 않습니다.' });
+          return res.status(401).json({ error: '기존 아이디 또는 비밀번호가 올바르지 않습니다.' });
       } else {
-        // old_id와 old_pw가 일치하는 경우, 정보를 수정
-        const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  
-        const updateQuery = 'UPDATE users SET user_name = ?, id = ?, pw = ?, update_date = ? WHERE id = ? AND pw = ?';
-        const updateValues = [user_name, id, pw, currentDateTime, old_id, pw];
-  
-        connection.query(updateQuery, updateValues, (updateErr, updateResults) => {
-          if (updateErr) {
-            console.error('쿼리 실행 오류:', updateErr);
-            res.status(500).json({ error: '정보 수정 중 오류 발생' });
-            return;
+          // old_id가 일치하는 경우, 정보를 수정
+          const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+          if (checkResults[0].user_name === user_name && old_id === id) {
+              // 올드 아이디와 아이디가 같고 이름도 같은 경우, 아무것도 변경하지 않음
+              console.log('기존 정보와 동일합니다.');
+              return res.status(200).json({ message: '변경된 사항이 없습니다.' });
           }
-          console.log('정보가 성공적으로 수정되었습니다.');
-  
-            res.status(200).json({ message: '정보가 수정되었습니다.' });
-        });
+
+          let updateQuery = '';
+          let updateValues = [];
+
+          if (old_id !== id) {
+              // 올드 아이디와 아이디가 다른 경우, 아이디와 이름 모두 변경
+              updateQuery = 'UPDATE users SET user_name = ?, id = ?, update_date = ? WHERE id = ?';
+              updateValues = [user_name, id, currentDateTime, old_id];
+          } else {
+              // 아이디는 같고 이름만 변경하는 경우, 이름만 변경
+              updateQuery = 'UPDATE users SET user_name = ?, update_date = ? WHERE id = ?';
+              updateValues = [user_name, currentDateTime, old_id];
+          }
+
+          connection.query(updateQuery, updateValues, (updateErr, updateResults) => {
+              if (updateErr) {
+                  console.error('쿼리 실행 오류:', updateErr);
+                  return res.status(500).json({ error: '정보 수정 중 오류 발생' });
+              }
+              console.log('정보가 성공적으로 수정되었습니다.');
+              return res.status(200).json({ message: '정보가 수정되었습니다.' });
+          });
       }
-    });
   });
+});
+
+
 
 
   //아이디 중복 확인
