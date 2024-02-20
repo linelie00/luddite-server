@@ -325,12 +325,10 @@ app.post('/use/checkId', (req, res) => {
   
 
   //회원 탈퇴
-  app.post('/delete', (req,res) => {
+  app.post('/use/deleteUser', (req,res) => {
     const id = req.body.id;
     const pw = req.body.pw;
 
-
-    // old_id와 old_pw 값이 데이터베이스에서 일치하는지 확인
     const checkQuery = 'SELECT * FROM users WHERE id = ? AND pw = ?';
     connection.query(checkQuery, [id, pw], (checkErr, checkResults) => {
     if (checkErr) {
@@ -340,9 +338,9 @@ app.post('/use/checkId', (req, res) => {
     }
 
     if (checkResults.length === 0) {
-        res.status(401).json({ error: '기존 아이디 또는 비밀번호가 올바르지 않습니다.' });
+        res.status(401).json({ error: '비밀번호가 올바르지 않습니다.' });
     } else {
-        // old_id와 old_pw가 일치하는 경우, 회원 정보 삭제
+        // id와 pw가 일치하는 경우, 회원 정보 삭제
         const deleteQuery = 'DELETE FROM users WHERE id = ? AND pw = ?';
         const deleteValues = [id, pw];
 
