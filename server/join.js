@@ -13,8 +13,8 @@ app.use(express.json());
 // 데이터베이스 연결 설정
 const connection = mysql.createConnection({
   host: 'localhost',
-  user: 'san00',
-  password: '0408',
+  user: 'root',
+  password: 'Linelie00@',
   database: 'luddite',
   port: 3306,
 });
