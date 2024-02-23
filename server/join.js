@@ -33,6 +33,37 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+//프록시 설정
+app.get('/api/search', async (req, res) => {
+  try {
+    const { key, advanced, type1, pos, method, target_type, req_type, part, q, sort, start, num } = req.query;
+
+    // axios를 사용하여 외부 서버로 요청을 보냄
+    const response = await axios.get('https://opendict.korean.go.kr', {
+      params: {
+        key,
+        advanced,
+        type1,
+        pos,
+        method,
+        target_type,
+        req_type,
+        part,
+        q,
+        sort,
+        start,
+        num
+      }
+    });
+
+    // 받은 데이터를 클라이언트에 전송
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error while fetching data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 //로그인
 app.post('/use/login', (req, res) => {
