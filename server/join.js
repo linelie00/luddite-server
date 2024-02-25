@@ -5,6 +5,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const app = express();
 const port = 8282;   
+const axios = require('axios');
 const server = require('http').createServer(app);
 
 app.use(cors());
@@ -34,12 +35,17 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 //프록시 설정
+// axios 인스턴스 생성
+const axiosInstance = axios.create({
+  baseURL: 'https://opendict.korean.go.kr'
+});
+
 app.get('/api/search', async (req, res) => {
   try {
     const { key, advanced, type1, pos, method, target_type, req_type, part, q, sort, start, num } = req.query;
 
     // axios를 사용하여 외부 서버로 요청을 보냄
-    const response = await axios.get('https://opendict.korean.go.kr', {
+    const response = await axiosInstance.get('/', {  // baseURL 설정으로 인해 '/'로 변경
       params: {
         key,
         advanced,
